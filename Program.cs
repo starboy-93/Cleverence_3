@@ -10,25 +10,37 @@
 
     public static class Server
     {
-        private static int count = 0; //переменная для хранения значения
-        private static readonly object lockObject = new object(); //объект для блокировки операций чтения и записи.
+        private static int count = 0; //переменная для хранения значения.
+        private static readonly SemaphoreSlim readLock = new SemaphoreSlim(10, 10); //семафор для управления параллельным доступом к чтению count.
+        private static readonly SemaphoreSlim writeLock = new SemaphoreSlim(1, 1); //семафор для управления последовательным доступом к записи count.
 
-        public static int GetCount() //метод для безопасного чтения значения count с использованием блокировки.
+        public static async Task<int> GetCountAsync() //асинхронный метод для безопасного чтения
         {
-            lock (lockObject)
+            await readLock.WaitAsync(); //ожидание доступа к семафору для чтения
+            try
             {
                 return count;
             }
-        }
-
-        public static void AddToCount(int value) //метод для безопасного добавления значения к count с блокировкой
-        {
-            lock (lockObject) //сама блокировка операций чтения и записи
+            finally
             {
-                //симуляция длительной операции добавления
-                Thread.Sleep(1000);
-                count += value;
+                readLock.Release(); //освобождение семафорора чтения
             }
         }
+
+        public static async Task AddToCountAsync(int value) //асинхронный метод для безопасной записи
+        {
+            await writeLock.WaitAsync(); //ожидание доступа к семафору для записи
+            try
+            {
+                //cимуляция длительной операции добавления
+                await Task.Delay(1000);
+                count += value;
+            }
+            finally
+            {
+                writeLock.Release();  //освобождение семафорора записи
+            }
+        }
+
     }
 }
