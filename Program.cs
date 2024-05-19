@@ -1,10 +1,51 @@
-﻿namespace Cleverence_3
+﻿using System.Diagnostics;
+using System.Threading;
+
+namespace Cleverence_3
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            while (true)
+            {
+                Console.WriteLine("Выберите пункт, который хотите выполнить: \n1. Прочитать переменную \n2. Изменить значение переменной \n3. Выйти из программы");
+                var choice = GetIntFromUser();
+                switch (choice)
+                {
+                    case 1:
+                        await Console.Out.WriteLineAsync($"Текущее значение переменной count: {await Server.GetCountAsync()}\n");
+                        break;
+                    case 2:
+                        await Console.Out.WriteLineAsync("Введите значение, которое необходимо добавить к переменной count:");
+                        var temp = GetIntFromUser();
+                        await Server.AddToCountAsync(temp);
+                        await Console.Out.WriteLineAsync($"Новое значение переменной count: {await Server.GetCountAsync()}\n");
+                        break;
+                    case 3:
+                        await Console.Out.WriteLineAsync("Вы выбрали завершение программы.");
+                        Process.GetCurrentProcess().Kill();
+                        break;
+                    default:
+                        await Console.Out.WriteLineAsync("Вашего выбора нет в списке! Попробуйте еще раз.\n");
+                        break;
+                }
+            }
+        }
+
+        private static int GetIntFromUser()
+        {
+            while (true)
+            {
+                if (int.TryParse(Console.ReadLine(), out int num))
+                {
+                    return num;
+                }
+                else
+                {
+                    Console.Write("Ошибка ввода. Пожалуйста, введите корректное число: \n");
+                }
+            }
         }
     }
 
@@ -27,20 +68,20 @@
             }
         }
 
-        public static async Task AddToCountAsync(int value) //асинхронный метод для безопасной записи
+
+        public static async Task AddToCountAsync(int value)
         {
-            await writeLock.WaitAsync(); //ожидание доступа к семафору для записи
+            await writeLock.WaitAsync();
             try
             {
-                //cимуляция длительной операции добавления
+                //симуляция долгой записи
                 await Task.Delay(1000);
                 count += value;
             }
             finally
             {
-                writeLock.Release();  //освобождение семафорора записи
+                writeLock.Release();
             }
         }
-
     }
 }
